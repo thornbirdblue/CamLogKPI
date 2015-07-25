@@ -26,14 +26,6 @@
 #!/bin/python
 import sys,os,re,string,time,datetime,xlwt
 
-# app log pattern
-appLogType = r'app_log_'
-
-# camera open start end end log
-# camera startPreview start and end log		!!! must a pair set
-CamLog = (r'openCamera E',r'openCamera X',r'StartPreview E',r'StartPreview X')
-
-
 # save log record			!!! Save all log data !!!
 logs = []
 
@@ -43,16 +35,25 @@ debugLogLevel=(0,1,2,3)	# 0:no log; 1:op logic; 2:op; 3:verbose
 
 # save file name
 fileName='cam_kpi_data.xls'
-SumTags=['Least','Max','Avg']
-
+SumTags=['FileName','Count','Type']
+SumTypes=['Least','Max','Avg']
+file_col_width = 6000				# col width
 
 class AppLogType:
 	'adb log dir info'
+	# app log pattern
+	appLogType = r'app_log_'
+
+	# camera open start end end log
+	# camera startPreview start and end log		!!! must a pair set
+	CamKPITags = ('Open time(ms)','StartPreview time(ms)')
+	CamLog = (r'openCamera E',r'openCamera X',r'StartPreview E',r'StartPreview X')
+	
 	logCnt = 0
 	__path = ''
 	__dir = ''
 	__file = ''
-	__time = ['','','','','','','','','','','','','','','','']			### !!! 8 pair time record must to more than len(CamLog)!!!
+	__time = []			### !!! 8 pair time record must to more than len(CamLog)!!!
 	__CamLogList = []								### log time's array
 	__CamTimeKPI = []								### every time kpi
 
@@ -63,35 +64,46 @@ class AppLogType:
 		AppLogType.logCnt+=1
 	
 	def __CalTime(self,date1,date2):
- 		Tdate1=time.strptime(date1,"%m-%d %H:%M:%S.%f")
+		Tdate1=time.strptime(date1,"%m-%d %H:%M:%S.%f")
     		Tdate2=time.strptime(date2,"%m-%d %H:%M:%S.%f")
-    		Sdate1=datetime.datetime(Tdate1[0],Tdate1[1],Tdate1[2],Tdate1[3],Tdate1[4],Tdate1[5])
-    		Sdate2=datetime.datetime(Tdate2[0],Tdate2[1],Tdate2[2],Tdate2[3],Tdate2[4],Tdate2[5])
-    		return Sdate2-Sdate1
+		
+		date1=date1.partition(' ')
+		d1=date1[2].partition('.')
+		if debugLog >= debugLogLevel[-1]:
+			print 'INFO: Data 1 '+d1[0]+"."+d1[2]
+
+		date2=date2.partition(' ')
+		d2=date2[2].partition('.')
+		if debugLog >= debugLogLevel[-1]:
+			print 'INFO: Data 2 '+d2[0]+"."+d2[2]
+ 		
+    		Sdate1=datetime.datetime(1970,Tdate1[1],Tdate1[2],Tdate1[3],Tdate1[4],Tdate1[5])
+    		Sdate2=datetime.datetime(1970,Tdate2[1],Tdate2[2],Tdate2[3],Tdate2[4],Tdate2[5])
+    		return int(time.mktime(Sdate2.timetuple())*1000)+string.atoi(d2[2])-int(time.mktime(Sdate1.timetuple())*1000)-string.atoi(d1[2])
 		
 
 	def __CalKPI(self,time):
-		KPITime=self.__time
+		count = 0
 		for i in range(0,len(time)):						# a group
+			count+=1
 			if not time[i]:
 				if debugLog >= debugLogLevel[-1]:
 					print 'INFO: Time Array len is :'+str(i)
 				break
 
-			if i%2==1 and i!=0:
+			if count%2==0:
 				if debugLog >= debugLogLevel[2]:
 					print 'INFO: KPI time is '+time[i-1]+" "+time[i]
 
-				KPITime[i/2] = self.__CalTime(time[i-1],time[i])
-				if debugLog >= debugLogLevel[1]:
-					print 'INFO: Group '+str(i/2)+' KPI: '+str(KPITime[i/2])
-		return KPITime		
+				self.__CamTimeKPI.append(self.__CalTime(time[i-1],time[i]))
+				if debugLog >= debugLogLevel[2]:
+					print 'INFO: Group '+str(i/2)+' KPI: '+str(self.__CamTimeKPI[count%2-1])
 
 
 	
 	def __ScanCamLog(self,fd):
-		if debugLog >= debugLogLevel[1]:
-			print 'INFO: begin -------------------------------------> scan camera log!'
+		if debugLog >= debugLogLevel[2]:
+			print 'INFO: begin scan camera log!'
 
 		while 1:
 			line = fd.readline()
@@ -103,18 +115,18 @@ class AppLogType:
 			if debugLog >= debugLogLevel[2]:
 				print 'INFO: Read line is :'+line
 		
-			for i in range(0,len(CamLog)):							# Adapter every key tag
+			for i in range(0,len(AppLogType.CamLog)):							# Adapter every key tag
 				if debugLog >= debugLogLevel[2]:
-					print 'INFO: Camera log-> '+CamLog[i]
+					print 'INFO: Camera log-> '+AppLogType.CamLog[i]
 
-				log = re.compile(CamLog[i])
+				log = re.compile(AppLogType.CamLog[i])
 		
 				if debugLog >= debugLogLevel[2]:
 					print 'INFO: Scan log-> '+log.pattern
 
 				search = re.search(log,line)
 				if search:
-					if debugLog >= debugLogLevel[1]:
+					if debugLog >= debugLogLevel[2]:
 						print 'INFO: Search Camera log->'+search.group()
 					
 					timeFormat = re.compile(r'\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d+')
@@ -127,26 +139,27 @@ class AppLogType:
 						if debugLog >= debugLogLevel[2]:
 							print 'INFO: Find key time-> '+time.group()
 						
-						self.__time[i] = time.group()
+						self.__time.append(time.group())
 						
-						if debugLog >= debugLogLevel[1]:
+						if debugLog >= debugLogLevel[2]:
 							print 'INFO: Time -> '+self.__time[i]
 					
 					## Save one group
-					if i == len(CamLog) - 1:
+					if i == len(AppLogType.CamLog) - 1:
 				
 						if debugLog >= debugLogLevel[-1]:
-							print 'INFO: Record one goup len num -> '+str(len(CamLog) - 1)
+							print 'INFO: Record one goup len num -> '+str(len(AppLogType.CamLog) - 1)
 
-						if debugLog >= debugLogLevel[1]:
-							print 'INFO: !!!---------------------------------Add one group record !!!'
+						if debugLog >= debugLogLevel[2]:
+							print 'INFO: Add one group record !!!'
 
 						# Save a group 
 						self.__CamLogList.append(self.__time)
 
 						# calc KPI
-						self.__CamTimeKPI.append(self.__CalKPI(self.__time))
-	
+						self.__CalKPI(self.__time)
+
+						self.__time=[]	
 
 	def ScanCameraLog(self):
 		if debugLog >= debugLogLevel[1]:
@@ -168,9 +181,14 @@ class AppLogType:
 		return self.__file
 
 	def GetCamLogList(self):
+		if debugLog >= debugLogLevel[2]:
+			print 'Cam Log list len: '+str(len(self.__CamLogList))
+
 		return self.__CamLogList
 		
 	def GetCamTimeKPI(self):
+		if debugLog >= debugLogLevel[2]:
+			print 'Cam Time KPI list len: '+str(len(self.__CamTimeKPI))
 		return self.__CamTimeKPI
 		
 # Only exec in one adb_log directory!!! Can't have two adb_log dir
@@ -179,10 +197,10 @@ def ScanFiles(arg,dirname,files):
 		print dirname
 
 	for file in files:
-		logType = re.compile(appLogType)
+		logType = re.compile(AppLogType.appLogType)
 
 		if debugLog >= debugLogLevel[-1]:
-			print appLogType
+			print AppLogType.appLogType
 			print file
 		
 		m = re.match(logType,file)
@@ -196,8 +214,62 @@ def ScanFiles(arg,dirname,files):
 			logs.append(log)
 			log.ScanCameraLog()
 
-def OutPutData(xl,Ssheet,mlog):
-	xl.add_sheet(mlog.GetName())
+def OutPutData(xl,Ssheet,mlog,index):
+	if debugLog >= debugLogLevel[1]:
+		print "\nSave sheet: "+mlog.GetName()
+	
+	sheet = xl.add_sheet(mlog.GetName())
+
+	# Ssheet save
+	Ssheet.col(0).width = 9000
+	Ssheet.write(index*3+1,0,mlog.GetName())
+
+	Ssheet.write(index*3+1,1,mlog.logCnt)
+		
+	Ssheet.col(2).width=file_col_width
+	for i in range(0,len(SumTypes)):
+		Ssheet.write(index*3+1+i,2,SumTypes[i])
+	
+	# sheet save	
+	for i in range(0,len(AppLogType.CamLog)):
+		sheet.col(i+1).width=file_col_width
+		sheet.write(0,i+1,AppLogType.CamLog[i])
+
+	for i in range(0,len(AppLogType.CamKPITags)):
+		col_p=i+1+len(AppLogType.CamLog)+1
+		sheet.col(col_p).width=file_col_width
+		sheet.write(0,col_p,AppLogType.CamKPITags[i])
+	
+	log = mlog.GetCamLogList()
+
+	for i in range(0,len(log)):
+		sheet.write(i+1,0,i+1)
+		
+	excel_date_fmt = 'MM-DD h:mm:ss.0'
+	style = xlwt.XFStyle()
+	style.num_format_str = excel_date_fmt
+		
+	KPIData = mlog.GetCamTimeKPI()
+	if debugLog >= debugLogLevel[2]:
+		print KPIData
+
+	for i in range(0,len(log)):
+		data = log[i]
+		
+		if debugLog >= debugLogLevel[2]:
+			print 'Group '+str(i+1)+' data len: '+str(len(data))
+		
+		for j in range(0,len(data)):
+			if debugLog >= debugLogLevel[2]:
+				print data[j]
+			sheet.write(i+1,j+1,data[j],style)
+		
+		if len(KPIData) < len(AppLogType.CamKPITags):
+			print 'ERROR: kpi data len '+str(len(KPIData))+' is less than need('+str(len(AppLogType.CamKPITags))+')!!!'
+		else:
+			for k in range(0,len(AppLogType.CamKPITags)):
+				sheet.write(i+1,k+1+len(AppLogType.CamLog)+1,KPIData[k+i*len(AppLogType.CamKPITags)])
+	
 
 # Save data to excel
 def SaveLogKPI():
@@ -205,10 +277,16 @@ def SaveLogKPI():
 	SumSheet = xlwb.add_sheet('Sum')
 
 	for i in range(0,len(SumTags)):
-		SumSheet.write(0,i+3,SumTags[i])
+		SumSheet.col(i).width=file_col_width
+		SumSheet.write(0,i,SumTags[i])
+	
+	for i in range(0,len(AppLogType.CamKPITags)):
+		col_p=len(SumTags)+1+i
+		SumSheet.col(col_p).width=file_col_width
+		SumSheet.write(0,col_p,AppLogType.CamKPITags[i])
 
 	for mlog in logs:
-		OutPutData(xlwb,SumSheet,mlog)
+		OutPutData(xlwb,SumSheet,mlog,logs.index(mlog))
 
 	xlwb.save(fileName)	
 
@@ -249,4 +327,3 @@ if __name__ == '__main__':
 	print 'Total Parse file num: '+str(AppLogType.logCnt)
 
 	SaveLogKPI()
-	print 'Save'
