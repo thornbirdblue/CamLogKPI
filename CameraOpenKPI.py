@@ -50,7 +50,8 @@ class AppLogType:
 	# camera open start end end log
 	# camera startPreview start and end log		!!! must a pair set
 	CamKPITags = ('Open time(ms)','StartPreview time(ms)')
-	CamLog = (r'openCamera\(\S\): E',r'openCamera\(\S\): X',r'QCamera2HardwareInterface:startPreview\(\): E',r'QCamera2HardwareInterface::startPreview\(\): X')
+	CamLog = ('openCamera E','openCamera X','startPreview E','startPreview X')
+	CamLogPattern = (r'openCamera\(\S\): E',r'openCamera\(\S\): X',r'QCamera2HardwareInterface:startPreview\(\): E',r'QCamera2HardwareInterface::startPreview\(\): X')
 	
 	logCnt = 0
 	__path = ''
@@ -131,7 +132,7 @@ class AppLogType:
 				if debugLog >= debugLogLevel[-1]:
 					print 'INFO: Camera log-> '+AppLogType.CamLog[i]
 
-				log = re.compile(AppLogType.CamLog[i])
+				log = re.compile(AppLogType.CamLogPattern[i])
 		
 				if debugLog >= debugLogLevel[2]:
 					print 'INFO: Scan log-> '+log.pattern

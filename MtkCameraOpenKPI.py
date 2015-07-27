@@ -36,7 +36,8 @@ debugLog = 0
 debugLogLevel=(0,1,2,3)	# 0:no log; 1:op logic; 2:op; 3:verbose
 
 # save file name
-fileName='cam_kpi_data.xls'
+fileName=''
+ScanPath=''
 SumTags=['FileName','Type']
 SumTypes=['Least','Max','Avg']
 file_col_width = 6000				# col width
@@ -49,7 +50,8 @@ class AppLogType:
 	# camera open start end end log
 	# camera startPreview start and end log		!!! must a pair set
 	CamKPITags = ('Open time(ms)','StartPreview time(ms)')
-	CamLog = (r'\[openDeviceLocked\]',r'\[attachDeviceLocked\]',r'\[Cam1DeviceBase::startPreview\] \+',r'\[Cam1DeviceBase::startPreview\] \- status')
+	CamLog = ('openDevice','openDeviceEnd','startPreview E','startPreview X')
+	CamLogPattern = (r'\[openDeviceLocked\]',r'\[attachDeviceLocked\]',r'\[Cam1DeviceBase::startPreview\] \+',r'\[Cam1DeviceBase::startPreview\] \- status')
 	
 	logCnt = 0
 	__path = ''
@@ -130,7 +132,7 @@ class AppLogType:
 				if debugLog >= debugLogLevel[-1]:
 					print 'INFO: Camera log-> '+AppLogType.CamLog[i]
 
-				log = re.compile(AppLogType.CamLog[i])
+				log = re.compile(AppLogType.CamLogPattern[i])
 		
 				if debugLog >= debugLogLevel[2]:
 					print 'INFO: Scan log-> '+log.pattern
@@ -329,8 +331,11 @@ def SaveLogKPI():
 
 	for mlog in logs:
 		OutPutData(xlwb,SumSheet,mlog,logs.index(mlog))
-
-	xlwb.save(fileName)	
+	
+	if fileName:
+		xlwb.save(fileName+'.xls')	
+	else:
+		xlwb.save('cam_kpi_data.xls')	
 
 
 def ParseArgv():
@@ -340,7 +345,7 @@ def ParseArgv():
 	else:
 		for i in range(1,len(sys.argv)):
 			if sys.argv[i] == '-h':
-				CameraOpenKPIHelp()
+				Usage()
 				sys.exit()
 			elif sys.argv[i] == '-d':
 				if sys.argv[i+1]:
@@ -354,18 +359,43 @@ def ParseArgv():
 				else:
 					CameraOpenKPIHelp()
 					sys.exit()
+			elif sys.argv[i] == '-o':
+				if sys.argv[i+1]:
+					global fileName
+					fileName = sys.argv[i+1]
+					print 'OutFileName is '+fileName
+				else:
+					Usage()
+					sys.exit()
+			elif sys.argv[i] == '-p':
+				if sys.argv[i+1]:
+					global ScanPath
+					ScanPath = sys.argv[i+1]
+					print 'Scan dir path is '+ScanPath
+				else:
+					Usage()
+					sys.exit()
+					
 
-def CameraOpenKPIHelp():
+def Usage():
 	print 'Command Format :'
-	print '		CameraOpenKPI [-d 0/1/2] | [-h]'
+	print '		CameraOpenKPI [-d 1/2/3] [-o outputfile] [-p path] | [-h]'
 
-appParaNum = 2
+appParaNum = 6
 
 if __name__ == '__main__':
 	ParseArgv()
-	print 'Local DIR: '+os.getcwd()+'\n'
 
-	os.path.walk(os.getcwd(),ScanFiles,())
+	print ScanPath.strip()
+	if not ScanPath.strip():
+		spath = os.getcwd()
+	else:
+		spath = ScanPath
+	
+	print 'Scan DIR: '+spath+'\n'
+
+	os.path.walk(spath,ScanFiles,())
 	print 'Total Parse file num: '+str(AppLogType.logCnt)
 
-	SaveLogKPI()
+	if AppLogType.logCnt:
+		SaveLogKPI()
