@@ -49,7 +49,7 @@ class AppLogType:
 	# camera open start end end log
 	# camera startPreview start and end log		!!! must a pair set
 	CamKPITags = ('Open time(ms)','StartPreview time(ms)')
-	CamLog = (r'MtkCam/devicemgr: [openDeviceLocked]',r'MtkCam/devicemgr: [attachDeviceLocked]',r'[Cam1DeviceBase::startPreview] +',r'[Cam1DeviceBase::startPreview] - status')
+	CamLog = (r'openCamera\(\S\): E',r'openCamera\(\S\): X',r'QCamera2HardwareInterface:startPreview\(\): E',r'QCamera2HardwareInterface::startPreview\(\): X')
 	
 	logCnt = 0
 	__path = ''
