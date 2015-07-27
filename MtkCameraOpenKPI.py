@@ -44,12 +44,12 @@ file_col_width = 6000				# col width
 class AppLogType:
 	'adb log dir info'
 	# app log pattern
-	appLogType = r'app_log_'
+	appLogType = r'main_log'
 
 	# camera open start end end log
 	# camera startPreview start and end log		!!! must a pair set
 	CamKPITags = ('Open time(ms)','StartPreview time(ms)')
-	CamLog = (r'MtkCam/devicemgr: [openDeviceLocked]',r'MtkCam/devicemgr: [attachDeviceLocked]',r'[Cam1DeviceBase::startPreview] +',r'[Cam1DeviceBase::startPreview] - status')
+	CamLog = (r'\[openDeviceLocked\]',r'\[attachDeviceLocked\]',r'\[Cam1DeviceBase::startPreview\] \+',r'\[Cam1DeviceBase::startPreview\] \- status')
 	
 	logCnt = 0
 	__path = ''
