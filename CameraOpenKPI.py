@@ -20,6 +20,8 @@
 #--------------------------------------------------------------------------
 #	liuchangjian	2015-07-23	v1.0		create
 #	liuchangjian	2015-07-24	v1.0		add xls save
+#	liuchangjian	2015-07-25	v1.0		adb_log sheet save is ok
+#	liuchangjian	2015-07-27	v1.0		release version 1.0
 #
 ###########################################################################
 
@@ -62,6 +64,9 @@ class AppLogType:
 		self.__dir = dir
 		self.__file = file
 		AppLogType.logCnt+=1
+		self.__time = []
+		self.__CamLogList  = []
+		self.__CamTimeKPI = []
 	
 	def __CalTime(self,date1,date2):
 		Tdate1=time.strptime(date1,"%m-%d %H:%M:%S.%f")
@@ -84,6 +89,7 @@ class AppLogType:
 
 	def __CalKPI(self,time):
 		count = 0
+		kpiTime=[]
 		for i in range(0,len(time)):						# a group
 			count+=1
 			if not time[i]:
@@ -95,9 +101,13 @@ class AppLogType:
 				if debugLog >= debugLogLevel[2]:
 					print 'INFO: KPI time is '+time[i-1]+" "+time[i]
 
-				self.__CamTimeKPI.append(self.__CalTime(time[i-1],time[i]))
-				if debugLog >= debugLogLevel[2]:
-					print 'INFO: Group '+str(i/2)+' KPI: '+str(self.__CamTimeKPI[count%2-1])
+				kpiTime.append(self.__CalTime(time[i-1],time[i]))
+				
+		if debugLog >= debugLogLevel[2]:
+			print 'INFO: Group KPI Data: '+str(kpiTime)
+					
+		# Save a group data		
+		self.__CamTimeKPI.append(kpiTime)
 
 
 	
@@ -109,7 +119,8 @@ class AppLogType:
 			line = fd.readline()
 			
 			if not line:
-				print 'INFO: Finish Parse file!\n'
+				if debugLog >= debugLogLevel[2]:
+					print 'INFO: Finish Parse file!\n'
 				break;
 
 			if debugLog >= debugLogLevel[2]:
@@ -150,8 +161,8 @@ class AppLogType:
 						if debugLog >= debugLogLevel[-1]:
 							print 'INFO: Record one goup len num -> '+str(len(AppLogType.CamLog) - 1)
 
-						if debugLog >= debugLogLevel[2]:
-							print 'INFO: Add one group record !!!'
+						if debugLog >= debugLogLevel[1]:
+							print self.__time
 
 						# Save a group 
 						self.__CamLogList.append(self.__time)
@@ -186,6 +197,11 @@ class AppLogType:
 
 		return self.__CamLogList
 		
+	def GetCamTimeKPIIndex(self,index):
+		if debugLog >= debugLogLevel[1]:
+			print 'Cam Time KPI index '+str(index)+' is : '+str(self.__CamTimeKPI[index])
+		return self.__CamTimeKPI[index]
+	
 	def GetCamTimeKPI(self):
 		if debugLog >= debugLogLevel[2]:
 			print 'Cam Time KPI list len: '+str(len(self.__CamTimeKPI))
@@ -247,10 +263,6 @@ def OutPutData(xl,Ssheet,mlog,index):
 	style = xlwt.XFStyle()
 	style.num_format_str = excel_date_fmt
 		
-	KPIData = mlog.GetCamTimeKPI()
-	if debugLog >= debugLogLevel[2]:
-		print KPIData
-
 	for i in range(0,len(log)):
 		data = log[i]
 		
@@ -261,13 +273,43 @@ def OutPutData(xl,Ssheet,mlog,index):
 			if debugLog >= debugLogLevel[2]:
 				print data[j]
 			sheet.write(i+1,j+1,data[j],style)
-		
-		if len(KPIData) < len(AppLogType.CamKPITags):
-			print 'ERROR: kpi data len '+str(len(KPIData))+' is less than need('+str(len(AppLogType.CamKPITags))+')!!!'
-		else:
-			for k in range(0,len(AppLogType.CamKPITags)):
-				sheet.write(i+1,k+1+len(AppLogType.CamLog)+1,KPIData[k+i*len(AppLogType.CamKPITags)])
 	
+		KPIIndexData = mlog.GetCamTimeKPIIndex(i)
+	
+		if debugLog >= debugLogLevel[2]:
+			print 'KPI index data is '+str(KPIIndexData)
+		
+		if len(KPIIndexData) < len(AppLogType.CamKPITags):
+			print 'ERROR: kpi data len '+str(len(KPIIndexData))+' is less than need('+str(len(AppLogType.CamKPITags))+')!!!'
+			return
+		else:
+			for j in range(0,len(AppLogType.CamKPITags)):
+				sheet.write(i+1,j+1+len(AppLogType.CamLog)+1,KPIIndexData[j])
+
+
+	# Save min max avg data to SumSheet
+	KPIData = mlog.GetCamTimeKPI()
+
+	if debugLog >= debugLogLevel[2]:
+		print 'KPI data is '+str(KPIData)
+
+	s_col_pos = len(SumTags)
+
+	for i in range(0,len(AppLogType.CamKPITags)):
+		GroupList = [x[i] for x in KPIData]
+		
+		if debugLog >= debugLogLevel[2]:
+			print 'Group data is '+str(GroupList)
+		
+		GroupList.sort()
+		
+		if debugLog >= debugLogLevel[2]:
+			print 'Sort Group data is '+str(GroupList)
+
+		Ssheet.write(index*3+1,s_col_pos+i,GroupList[0])
+		Ssheet.write(index*3+1+1,s_col_pos+i,GroupList[-1])
+		Ssheet.write(index*3+1+2,s_col_pos+i,sum(GroupList)/len(GroupList))
+
 
 # Save data to excel
 def SaveLogKPI():
