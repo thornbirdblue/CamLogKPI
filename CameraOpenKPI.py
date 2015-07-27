@@ -35,7 +35,7 @@ debugLogLevel=(0,1,2,3)	# 0:no log; 1:op logic; 2:op; 3:verbose
 
 # save file name
 fileName='cam_kpi_data.xls'
-SumTags=['FileName','Count','Type']
+SumTags=['FileName','Type']
 SumTypes=['Least','Max','Avg']
 file_col_width = 6000				# col width
 
@@ -224,11 +224,9 @@ def OutPutData(xl,Ssheet,mlog,index):
 	Ssheet.col(0).width = 9000
 	Ssheet.write(index*3+1,0,mlog.GetName())
 
-	Ssheet.write(index*3+1,1,mlog.logCnt)
-		
 	Ssheet.col(2).width=file_col_width
 	for i in range(0,len(SumTypes)):
-		Ssheet.write(index*3+1+i,2,SumTypes[i])
+		Ssheet.write(index*3+1+i,1,SumTypes[i])
 	
 	# sheet save	
 	for i in range(0,len(AppLogType.CamLog)):
@@ -281,7 +279,7 @@ def SaveLogKPI():
 		SumSheet.write(0,i,SumTags[i])
 	
 	for i in range(0,len(AppLogType.CamKPITags)):
-		col_p=len(SumTags)+1+i
+		col_p=len(SumTags)+i
 		SumSheet.col(col_p).width=file_col_width
 		SumSheet.write(0,col_p,AppLogType.CamKPITags[i])
 
