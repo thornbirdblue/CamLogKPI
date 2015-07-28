@@ -351,17 +351,25 @@ def OutPutData(xl,Ssheet,mlog,index):
 		for i in range(0,len(AppLogType.CamKPITags)):
 			GroupList = [x[i] for x in KPIData]
 		
-			if debugLog >= debugLogLevel[2]:
+			if debugLog >= debugLogLevel[1]:
 				print 'Group data is '+str(GroupList)
+
+			# remove 0 item
+			GList = []
+			for j in range(0,len(GroupList)):
+				if GroupList[j] == 0:
+					print 'WARNING: Remove List '+str(j)+'! Val is '+str(GroupList[j])
+				else:
+					GList.append(GroupList[j])				
 		
-			GroupList.sort()
+			GList.sort()
 		
 			if debugLog >= debugLogLevel[2]:
-				print 'Sort Group data is '+str(GroupList)
+				print 'Sort Group data is '+str(GList)
 
-			Ssheet.write(index*3+1,s_col_pos+i,GroupList[0])
-			Ssheet.write(index*3+1+1,s_col_pos+i,GroupList[-1])
-			Ssheet.write(index*3+1+2,s_col_pos+i,sum(GroupList)/len(GroupList))
+			Ssheet.write(index*3+1,s_col_pos+i,GList[0])
+			Ssheet.write(index*3+1+1,s_col_pos+i,GList[-1])
+			Ssheet.write(index*3+1+2,s_col_pos+i,sum(GList)/len(GList))
 	else:
 		print 'WARNing: There is no Camera log in '+LogName+' file!!!'
 
