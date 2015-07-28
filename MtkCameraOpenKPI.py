@@ -386,7 +386,7 @@ def SaveLogKPI():
 	if fileName:
 		xlwb.save(fileName+'.xls')	
 	else:
-		xlwb.save('cam_kpi_data.xls')	
+		xlwb.save('Mtkcam_kpi_data.xls')	
 
 
 def ParseArgv():
