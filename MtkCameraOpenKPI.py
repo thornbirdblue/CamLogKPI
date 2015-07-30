@@ -23,6 +23,7 @@
 #	liuchangjian	2015-07-25	v1.0		adb_log sheet save is ok
 #	liuchangjian	2015-07-27	v1.0		release version 1.0
 #	liuchangjian	2015-07-28	v1.1		resolve sheet dup name and null tag write pos questions
+#	liuchangjian	2015-07-30	v1.2		not match mtk main_log.boot file
 #
 ###########################################################################
 
@@ -46,7 +47,7 @@ file_col_width = 4500				# col width
 class AppLogType:
 	'adb log dir info'
 	# app log pattern
-	appLogType = r'main_log'
+	appLogType = r'main_log.\d'					#!!! mtk not match main_log.boot file
 
 	# camera open start end end log
 	# camera startPreview start and end log		!!! must a pair set
@@ -253,7 +254,7 @@ def ScanFiles(arg,dirname,files):
 			print file
 		
 		m = re.match(logType,file)
-		if m:
+		if file == 'main_log' or m:				#!!! mtk not match main_log.boot file
 			path,name = os.path.split(dirname)
 
 			if debugLog >= debugLogLevel[2]:
