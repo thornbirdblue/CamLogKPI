@@ -76,7 +76,7 @@ class AppLogType:
 	
 	def __CalTime(self,date1,date2):
 		Tdate1=time.strptime(date1,"%m-%d %H:%M:%S.%f")
-    		Tdate2=time.strptime(date2,"%m-%d %H:%M:%S.%f")
+		Tdate2=time.strptime(date2,"%m-%d %H:%M:%S.%f")
 		
 		date1=date1.partition(' ')
 		d1=date1[2].partition('.')
