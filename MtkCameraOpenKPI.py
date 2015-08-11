@@ -24,6 +24,7 @@
 #	liuchangjian	2015-07-27	v1.0		release version 1.0
 #	liuchangjian	2015-07-28	v1.1		resolve sheet dup name and null tag write pos questions
 #	liuchangjian	2015-07-30	v1.2		not match mtk main_log.boot file
+#	liuchangjian	2015-07-30	v1.3		correct time is xx.xx.xx.xxxxxx! There is six num in ms!
 #
 ###########################################################################
 
@@ -89,10 +90,30 @@ class AppLogType:
 		d2=date2[2].partition('.')
 		if debugLog >= debugLogLevel[-1]:
 			print 'INFO: Data 2 '+d2[0]+"."+d2[2]
- 		
-    		Sdate1=datetime.datetime(1990,Tdate1[1],Tdate1[2],Tdate1[3],Tdate1[4],Tdate1[5])
-    		Sdate2=datetime.datetime(1990,Tdate2[1],Tdate2[2],Tdate2[3],Tdate2[4],Tdate2[5])
-    		return int(time.mktime(Sdate2.timetuple())*1000)+string.atoi(d2[2])-int(time.mktime(Sdate1.timetuple())*1000)-string.atoi(d1[2])
+		
+		Sdate1=datetime.datetime(1990,Tdate1[1],Tdate1[2],Tdate1[3],Tdate1[4],Tdate1[5])
+		Sdate2=datetime.datetime(1990,Tdate2[1],Tdate2[2],Tdate2[3],Tdate2[4],Tdate2[5])
+
+		## 2015-08-11 liuchangjian correct time is xx.xx.xx.xxxxxx! There is six num in ms begin
+		Sdata1C = time.mktime(Sdate1.timetuple())*1000
+		Sdata2C = time.mktime(Sdate2.timetuple())*1000
+		
+		if len(d1[2]) == 3 :
+			ms2 = string.atoi(d2[2])
+			ms1 = string.atoi(d1[2])
+		elif len(d1[2]) == 6:
+			ms2 = string.atoi(d2[2])/1000
+			ms1 = string.atoi(d1[2])/1000
+
+		time2 = Sdata2C+ms2
+		time1 = Sdata1C+ms1
+		
+		## 2015-08-11 liuchangjian correct time is xx.xx.xx.xxxxxx! There is six num in ms End
+		
+		if debugLog >= debugLogLevel[2]:
+			print 'Cal Time is '+str(time2)+" - "+str(time1)
+
+		return int(time2 - time1)
 		
 
 	def __CalKPI(self,time):
@@ -149,7 +170,7 @@ class AppLogType:
 
 				log = re.compile(AppLogType.CamLogPattern[i])
 		
-				if debugLog >= debugLogLevel[2]:
+				if debugLog >= debugLogLevel[-1]:
 					print 'INFO: Scan log-> '+log.pattern
 
 				search = re.search(log,line)
