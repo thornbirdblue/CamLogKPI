@@ -25,6 +25,7 @@
 #	liuchangjian	2015-07-28	v1.1		resolve sheet dup name and null tag write pos questions
 #	liuchangjian	2015-07-30	v1.2		not match mtk main_log.boot file
 #	liuchangjian	2015-07-30	v1.3		correct time is xx.xx.xx.xxxxxx! There is six num in ms!
+#	liuchangjian	2015-09-08	v2.0		fix error code in file can't scan bug!!! Use rb mode to open file!	
 #
 ###########################################################################
 
@@ -55,8 +56,8 @@ class AppLogType:
 	CamKPITags = ('Open time(ms)','StartPreview(ms)','Sum time(ms)','Total time(ms)')
 	CamLog = ('connect','connect End','startPreview E','startPreview X')
 	# !!!Attention!!!:CamLogPattern must to the same with CamLogPos
-	CamLogPattern = (r'CameraService: Client::Client E',r'CameraService: Client::Client X',r'CameraClient: startPreview ',r'\[Cam1DeviceBase::startPreview\] \- status')
-	CamLogPos = ('CameraService: Client::Client E','CameraService: Client::Client X','CameraClient: startPreview ','[Cam1DeviceBase::startPreview] - status')
+	CamLogPattern = (r'CameraService: CameraService::connect E',r'CameraService: CameraService::connect X',r'CameraClient: startPreview\s',r'\[Cam1DeviceBase::startPreview\] \- status')
+	CamLogPos = ('CameraService: CameraService::connect E','CameraService: CameraService::connect X','CameraClient: startPreview ','[Cam1DeviceBase::startPreview] - status')
 
 	logNames=[]
 	
@@ -230,7 +231,7 @@ class AppLogType:
 		if debugLog >= debugLogLevel[1]:
 			print 'Parse file: '+os.path.join(self.__path,self.__file)
 		try:
-			fd = open(os.path.join(self.__path,self.__file),'r')	
+			fd = open(os.path.join(self.__path,self.__file),'rb')								# 2015-09-08 liuchangjian fix error code in file bug!!! change r to rb mode!
 			
 			if debugLog >= debugLogLevel[2]:
 				print 'INFO: open file :'+os.path.join(self.__path,self.__file)
@@ -381,8 +382,8 @@ def OutPutData(xl,Ssheet,mlog,index):
 			for j in range(0,len(GroupList)):
 				if GroupList[j] == 0:
 					print 'WARNING: Remove List '+str(j)+'! Val is '+str(GroupList[j])
-				else:
-					GList.append(GroupList[j])				
+				# liuchangjian 2015-09-08 del else code! fix zero bug!
+				GList.append(GroupList[j])				
 		
 			GList.sort()
 		
